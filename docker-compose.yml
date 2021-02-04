@@ -86,10 +86,6 @@ services:
       - /etc/groups:/etc/groups
       - ./settings:/tmp/laravel
     working_dir: /var/www/html
-    #environment:
-    #    USER_ID: 1000
-    #    USER_NAME: askar
-    #    USER_GROUP: 1000
     user: 1000:1000    
     command: >
        bash -c "rm -rf /var/www/html/README.md &&
