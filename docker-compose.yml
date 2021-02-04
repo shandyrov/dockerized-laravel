@@ -1,0 +1,129 @@
+version: '3'
+
+networks:
+  network_172.16.1.0:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.16.1.0/16
+          gateway: 172.16.1.0
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: nginx.dockerfile
+    container_name: nginx_172.16.1.2
+    ports:
+      - "55:80"
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      - php
+      - mysql
+    networks:
+      network_172.16.1.0:
+        ipv4_address: 172.16.1.2
+
+  php:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: php_172.16.1.3
+    volumes:
+      - ./src:/var/www/html:delegated
+      - ./php/php.ini:/usr/local/etc/php/php.ini  
+    ports:
+      - "9005:9000"
+    networks:
+      network_172.16.1.0:
+        ipv4_address: 172.16.1.3
+        
+
+  mysql:
+    image: mysql:5.7.29
+    container_name: mysql_172.16.1.4
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3355:3306"
+    environment:
+      MYSQL_DATABASE: app
+      MYSQL_USER: root
+      MYSQL_PASSWORD: 12345678
+      MYSQL_ROOT_PASSWORD: 12345678
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    networks:
+      network_172.16.1.0:
+        ipv4_address: 172.16.1.4
+
+  phpmyadmin:
+        image: phpmyadmin/phpmyadmin
+        container_name: phpmyadmin_172.16.1.5
+        environment:
+            - PMA_ARBITRARY=1
+            - PMA_HOST=mysql
+        restart: unless-stopped
+        ports:
+           - 2055:80
+        volumes:
+           - /sessions
+        networks:
+          network_172.16.1.0:
+            ipv4_address: 172.16.1.5
+  
+  composer:
+    container_name: composer_172.16.1.8
+    restart: 'no'
+    image: composer:latest
+    depends_on:
+      - mysql
+    volumes:
+      #- "./etc/ssl:/etc/ssl"
+      - ./src:/var/www/html
+      - /etc/passwd:/etc/passwd
+      - /etc/groups:/etc/groups
+      - ./settings:/tmp/laravel
+    working_dir: /var/www/html
+    #environment:
+    #    USER_ID: 1000
+    #    USER_NAME: askar
+    #    USER_GROUP: 1000
+    user: 1000:1000    
+    command: >
+       bash -c "composer create-project --prefer-dist laravel/laravel project &&
+       cp /tmp/laravel/env /var/www/html/project/.env"  
+    networks:
+      network_172.16.1.0:
+        ipv4_address: 172.16.1.8
+
+
+  artisan:
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    container_name: artisan_172.16.1.7
+    volumes:
+      - ./src:/var/www/html:delegated
+    depends_on:
+      - mysql
+    working_dir: /var/www/html
+    user: laravel
+    entrypoint: ['php', '/var/www/html/project/artisan']
+    networks:  
+      network_172.16.1.0:
+        ipv4_address: 172.16.1.7
+        
+        
+  npm:
+    image: node:13.7
+    container_name: npm_172.16.1.9
+    volumes:
+      - ./src:/var/www/html
+    working_dir: /var/www/html
+    entrypoint: ['npm']    
+    networks:  
+      network_172.16.1.0:
+        ipv4_address: 172.16.1.9
+        
