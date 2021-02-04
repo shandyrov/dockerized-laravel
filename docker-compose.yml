@@ -15,7 +15,7 @@ services:
       dockerfile: nginx.dockerfile
     container_name: nginx_172.16.1.2
     ports:
-      - "55:80"
+      - "80:80"
     volumes:
       - ./src:/var/www/html:delegated
     depends_on:
@@ -92,7 +92,8 @@ services:
     #    USER_GROUP: 1000
     user: 1000:1000    
     command: >
-       bash -c "composer create-project --prefer-dist laravel/laravel project &&
+       bash -c "rm -rf /var/www/html/README.md &&
+       composer create-project --prefer-dist laravel/laravel project &&
        cp /tmp/laravel/env /var/www/html/project/.env"  
     networks:
       network_172.16.1.0:
